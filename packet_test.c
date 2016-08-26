@@ -30,11 +30,11 @@
 		if (result != val) {PRINT_FAIL();goto fail;} \
     PRINT_PASS(); \
   } while(0)
-#define PRINT_MODULE() fprintf(stderr, "*** MODULE: %s\n", module);
-#define PRINT_FUNCTION() fprintf(stderr, " * FUNCTION %s\n", __FUNCTION__)
-#define PRINT_TEST(fmt, ...) fprintf(stderr, "  - " fmt ": ", ## __VA_ARGS__);
-#define PRINT_PASS() fprintf(stderr, "PASS\n");
-#define PRINT_FAIL() fprintf(stderr, "FAIL\n");
+#define PRINT_MODULE() Serial.printf("*** MODULE: %s\n", module);
+#define PRINT_FUNCTION() Serial.printf(" * FUNCTION %s\n", __FUNCTION__)
+#define PRINT_TEST(fmt, ...) Serial.printf("  - " fmt ": ", ## __VA_ARGS__);
+#define PRINT_PASS() Serial.printf("PASS\n");
+#define PRINT_FAIL() Serial.printf("FAIL\n");
 
 static const char* module;
 static const char* function;

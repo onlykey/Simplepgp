@@ -109,7 +109,7 @@ spgp_mpi_t *spgp_read_mpi(uint8_t *msg, uint32_t *idx,
   mpi->bits = ((msg[*idx] << 8) | msg[*idx + 1]);
   
   mpi->count = (mpi->bits+7)/8;
-  LOG_PRINT("MPI Bits: %u\n", mpi->bits);
+  Serial.printf("MPI Bits: %u\n", mpi->bits);
   
   // Allocate space for MPI data
   mpi->data = malloc(mpi->count + 2);

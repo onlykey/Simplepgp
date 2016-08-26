@@ -22,7 +22,7 @@
 
 #include "util.h"
 
-uint8_t spgp_pgp_to_gcrypt_symmetric_algo(uint8_t pgpalgo) {
+/*uint8_t spgp_pgp_to_gcrypt_symmetric_algo(uint8_t pgpalgo) {
   switch (pgpalgo) {
   case 1: return GCRY_CIPHER_IDEA;
   case 2: return GCRY_CIPHER_3DES;
@@ -34,8 +34,9 @@ uint8_t spgp_pgp_to_gcrypt_symmetric_algo(uint8_t pgpalgo) {
   case 10:return GCRY_CIPHER_TWOFISH;
   default: return 0xFF;
   }
-}
+}*/
 
+/*
 uint8_t spgp_iv_length_for_symmetric_algo(uint8_t algo) {
 	size_t ivlen = 0;
 	if (gcry_cipher_algo_info(spgp_pgp_to_gcrypt_symmetric_algo(algo), 
@@ -45,6 +46,7 @@ uint8_t spgp_iv_length_for_symmetric_algo(uint8_t algo) {
   	RAISE(FORMAT_UNSUPPORTED);
   return ivlen;
 }
+*/
 
 uint8_t spgp_salt_length_for_hash_algo(uint8_t algo) {
 	if (algo == HASH_ALGO_SHA1) return 8;

@@ -24,9 +24,9 @@
 
 #include "packet_private.h"
 
-uint8_t spgp_pgp_to_gcrypt_symmetric_algo(uint8_t pgpalgo);
+//uint8_t spgp_pgp_to_gcrypt_symmetric_algo(uint8_t pgpalgo);
                             
-uint8_t spgp_iv_length_for_symmetric_algo(uint8_t algo);
+//uint8_t spgp_iv_length_for_symmetric_algo(uint8_t algo);
 
 uint8_t spgp_salt_length_for_hash_algo(uint8_t algo);
 

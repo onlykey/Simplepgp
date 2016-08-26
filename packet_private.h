@@ -23,9 +23,9 @@
 #ifndef _PACKET_PRIVATE_H
 
 #include "simplepgp.h"
-#include "gcrypt.h"
+//#include "gcrypt.h"
 
-#include <stdio.h>
+//#include <stdio.h>
 #include <setjmp.h>
 #include <pthread.h>
 
@@ -40,10 +40,11 @@
 #define RAISE(err) do { \
 		pthread_mutex_lock(&spgp_mtx); \
 		_spgp_err = (err); \
-    LOG_PRINT("raise 0x%X\n",_spgp_err); \
+    Serial.printf("raise 0x%X\n",_spgp_err); \
 		pthread_mutex_unlock(&spgp_mtx); \
     longjmp(exception,_spgp_err); \
   } while(0)
+  
 
 #define SAFE_IDX_INCREMENT(idx,max) \
 	do{ \
@@ -51,12 +52,13 @@
   		RAISE(BUFFER_OVERFLOW);\
     } \
   } while(0)
-  
-#define LOG_PRINT(fmt, ...) do {\
+ 
+#define Serial.printf(fmt, ...) do {\
 	if (debug_log_enabled) {\
-  	fprintf(stderr, "SPGP [%s():%d]: " fmt, \
+  	Serial.printf("SPGP [%s():%d]: " fmt, \
     	__FUNCTION__, __LINE__, ## __VA_ARGS__);\
   } } while(0)
+  
 
 
 extern pthread_mutex_t spgp_mtx;
@@ -173,6 +175,7 @@ typedef enum {
   KEYCHAIN_ERROR,
   ZLIB_ERROR,
 } spgp_error_t;
+
 
 typedef enum {
 	PKT_TYPE_SESSION           = 1,

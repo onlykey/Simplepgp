@@ -26,7 +26,7 @@
 #include "util.h"
 #include "mpi.h"
 
-#include "gcrypt.h"
+//#include "gcrypt.h"
 
 #include <wchar.h>
 #include <locale.h>
@@ -171,14 +171,14 @@ spgp_packet_t *spgp_decode_message(uint8_t *message, uint32_t length) {
 //  spgp_packet_t *pkt = NULL;
   uint32_t idx = 0;
   
-	LOG_PRINT("begin\n");
+	Serial.printf("begin\n");
   
 	switch (setjmp(exception)) {
   	case 0:
     	break; /* Run logic */
     /* Below here are exceptions */
     default:
-    	LOG_PRINT("Exception (0x%x)\n",_spgp_err);
+    	Serial.printf("Exception (0x%x)\n",_spgp_err);
       spgp_free_packet(&head);
   	  goto end;
   }
@@ -224,7 +224,7 @@ spgp_packet_t *spgp_decode_message(uint8_t *message, uint32_t length) {
       	spgp_parse_compressed_packet(message, &idx, length, pkt);
         break;
       default:
-        LOG_PRINT("WARNING: Unsupported packet type %u\n", pkt->header->type);
+        Serial.printf("WARNING: Unsupported packet type %u\n", pkt->header->type);
         // Increment to next packet.  We add the contentLength, but subtract
         // one parse_header() left us on the first byte of content.
         if (idx + pkt->header->contentLength - 1 < length)
@@ -251,7 +251,7 @@ spgp_packet_t *spgp_decode_message(uint8_t *message, uint32_t length) {
 	head = spgp_packet_decode_loop(message, &idx, length);
 
   end:
-  LOG_PRINT("done\n");
+  Serial.printf("done\n");
   return head;
 }
 
@@ -260,7 +260,7 @@ char *spgp_get_literal_data(spgp_packet_t *msg, uint32_t *datalen,
 	spgp_packet_t *cur = msg;
   
 	if (setjmp(exception)) {
-    	LOG_PRINT("Exception (0x%x)\n",_spgp_err);
+    	Serial.printf("Exception (0x%x)\n",_spgp_err);
   	  goto end;
   }
   
@@ -289,14 +289,14 @@ uint8_t spgp_decrypt_all_secret_keys(spgp_packet_t *msg,
   uint8_t haskey = 0;
   
 	if (setjmp(exception)) {
-    	LOG_PRINT("Exception (0x%x)\n",_spgp_err);
+    	Serial.printf("Exception (0x%x)\n",_spgp_err);
   	  goto end;
   }
 
 	if (NULL == msg || NULL == passphrase || length == 0) RAISE(INVALID_ARGS);
 
 	while ((cur = spgp_next_secret_key_packet(cur)) != NULL) {
-  	LOG_PRINT("Decrypting secret key\n");
+  	Serial.printf("Decrypting secret key\n");
   	spgp_decrypt_secret_key(cur, passphrase, length);
   	cur = cur->next;
     haskey = 1;
@@ -521,7 +521,7 @@ static spgp_packet_t* spgp_packet_decode_loop(uint8_t *message,
       	spgp_parse_signature_packet(message, idx, length, pkt);
         break;
       default:
-        LOG_PRINT("WARNING: Unsupported packet type %u\n", pkt->header->type);
+        Serial.printf("WARNING: Unsupported packet type %u\n", pkt->header->type);
         // Increment to next packet.  We add the contentLength, but subtract
         // one parse_header() left us on the first byte of content.
         if (*idx + pkt->header->contentLength - 1 < length)
@@ -561,7 +561,7 @@ static uint8_t spgp_parse_header(uint8_t *msg, uint32_t *idx,
 
 	// Allocate a header
 	if (pkt->header == NULL) {
-  	LOG_PRINT("Allocating header.\n");
+  	Serial.printf("Allocating header.\n");
   	pkt->header = malloc(sizeof(*(pkt->header)));
     if (pkt->header == NULL)
     	RAISE(OUT_OF_MEMORY);
@@ -574,7 +574,7 @@ static uint8_t spgp_parse_header(uint8_t *msg, uint32_t *idx,
   // The first byte is the 'tag byte', which tells us the packet type.
   pkt->header->rawTagByte = msg[*idx];
   SAFE_IDX_INCREMENT(*idx, length);
-  LOG_PRINT("TAG BYTE: 0x%.2X\n", pkt->header->rawTagByte);
+  Serial.printf("TAG BYTE: 0x%.2X\n", pkt->header->rawTagByte);
   
   // Validate tag byte -- top bit always set
   if (!(pkt->header->rawTagByte & 0x80))
@@ -588,7 +588,7 @@ static uint8_t spgp_parse_header(uint8_t *msg, uint32_t *idx,
   	pkt->header->type = pkt->header->rawTagByte & 0x1F;
   else // old style
   	pkt->header->type = (pkt->header->rawTagByte >> 2) & 0x0F;
-  LOG_PRINT("TYPE: 0x%.2X\n", pkt->header->type);
+  Serial.printf("TYPE: 0x%.2X\n", pkt->header->type);
   
   // Read the length of the packet's contents.  In old packets, the length
   // is encoded into the tag byte. 
@@ -599,7 +599,7 @@ static uint8_t spgp_parse_header(uint8_t *msg, uint32_t *idx,
       case 2: pkt->header->headerLength = 5; break;
       default: 
       	// "indeterminate length" packet
-        LOG_PRINT("Indeterminate length packet\n");
+        Serial.printf("Indeterminate length packet\n");
       	pkt->header->headerLength = 1;
         pkt->header->contentLength = length-*idx-1;
     }
@@ -620,7 +620,7 @@ static uint8_t spgp_parse_header(uint8_t *msg, uint32_t *idx,
     SAFE_IDX_INCREMENT(*idx, length);
   }
   
-  LOG_PRINT("LENGTH: %u\n", pkt->header->contentLength);
+  Serial.printf("LENGTH: %u\n", pkt->header->contentLength);
   
 	return 0;
 }
@@ -656,7 +656,7 @@ static uint32_t spgp_new_header_length(uint8_t *header,
   }
   else {
     // indeterminate length
-    LOG_PRINT("Partial length header!\n");
+    Serial.printf("Partial length header!\n");
     *header_len = 2;
     *is_partial = 1;
     content = 1 << (len[0] & 0x1F);
@@ -668,7 +668,7 @@ static uint8_t spgp_parse_user_id(uint8_t *msg, uint32_t *idx,
           												uint32_t length, spgp_packet_t *pkt) {
 	spgp_userid_pkt_t *userid;
 
-  LOG_PRINT("Parsing user id.\n");
+  Serial.printf("Parsing user id.\n");
 
 	// Make sure we have enough bytes remaining for the copy
   if (length - *idx < pkt->header->contentLength) RAISE(BUFFER_OVERFLOW);
@@ -688,7 +688,7 @@ static uint8_t spgp_parse_user_id(uint8_t *msg, uint32_t *idx,
   *idx += pkt->header->contentLength - 1;
 
   setlocale(LC_CTYPE, "en_US.UTF-8");
-  wprintf(L"USER ID: %s\n", pkt->c.userid->data);
+  Serial.printf("USER ID: %s\n", pkt->c.userid->data);
   
 	return 0;                                     
 }
@@ -764,11 +764,11 @@ static uint8_t spgp_generate_fingerprint(spgp_packet_t *pkt) {
   if (NULL == pkt->c.pub->fingerprint) RAISE(OUT_OF_MEMORY);
   memcpy(pkt->c.pub->fingerprint, hash, 20);
   
-  LOG_PRINT("HASH: ");
+  Serial.printf("HASH: ");
   for (targetMpiCount=0; targetMpiCount < 20; targetMpiCount++) {
-  	fprintf(stderr, "%.2X", pkt->c.pub->fingerprint[targetMpiCount]);
+  	Serial.printf("%.2X", pkt->c.pub->fingerprint[targetMpiCount]);
   }
-  fprintf(stderr,"\n");
+  Serial.printf("\n");
   
   gcry_md_close(md);
   
@@ -940,7 +940,7 @@ static uint8_t spgp_parse_public_key(uint8_t *msg, uint32_t *idx,
           													 uint32_t length, spgp_packet_t *pkt) {
   spgp_public_pkt_t *pub;
   
-  LOG_PRINT("Parsing public key.\n");
+  Serial.printf("Parsing public key.\n");
 
 	// Make sure we have enough bytes remaining for parsing
   if (length - *idx < pkt->header->contentLength) RAISE(BUFFER_OVERFLOW);
@@ -970,12 +970,12 @@ static uint8_t spgp_parse_public_key(uint8_t *msg, uint32_t *idx,
 	// Next byte identifies asymmetric algorithm
 	pub->asymAlgo = msg[*idx];
 	SAFE_IDX_INCREMENT(*idx, length);
-  LOG_PRINT("Asymmetric algorithm: %d\n", pub->asymAlgo);
+  Serial.printf("Asymmetric algorithm: %d\n", pub->asymAlgo);
   
   // Read variable number of MPIs (depends on asymmetric algorithm), each
   // of which are variable size.
 	spgp_read_all_public_mpis(msg, idx, length, pkt->c.pub);
-  LOG_PRINT("Read %u MPIs\n", pub->mpiCount);
+  Serial.printf("Read %u MPIs\n", pub->mpiCount);
   
   return 0;
 }
@@ -986,7 +986,7 @@ static uint8_t spgp_parse_secret_key(uint8_t *msg, uint32_t *idx,
   spgp_public_pkt_t *pub;
   uint32_t startIdx = *idx;
   
-  LOG_PRINT("Parsing secret key.\n");
+  Serial.printf("Parsing secret key.\n");
 
 	// Make sure we have enough bytes remaining for parsing
   if (length - *idx < pkt->header->contentLength) RAISE(BUFFER_OVERFLOW);
@@ -1023,7 +1023,7 @@ static uint8_t spgp_parse_secret_key(uint8_t *msg, uint32_t *idx,
     	secret->s2kEncryption = secret->s2kType;
     	break;
   }
-  LOG_PRINT("Encryption: %u\n", secret->s2kEncryption);
+  Serial.printf("Encryption: %u\n", secret->s2kEncryption);
   
   if (secret->s2kEncryption) {
   	// Secret exponent is encrypted (as it should be).  Time to decrypt.
@@ -1032,13 +1032,13 @@ static uint8_t spgp_parse_secret_key(uint8_t *msg, uint32_t *idx,
     if (secret->s2kType >= 254) {
 			secret->s2kSpecifier = msg[*idx];
   	  SAFE_IDX_INCREMENT(*idx, length);
-   	 LOG_PRINT("S2K Specifier: %u\n", secret->s2kSpecifier);
+   	 Serial.printf("S2K Specifier: %u\n", secret->s2kSpecifier);
     }
     
     // S2K hash algorithm specifies how to hash passphrase into a key
     secret->s2kHashAlgo = msg[*idx];
     SAFE_IDX_INCREMENT(*idx, length);
-    LOG_PRINT("Hash algorithm: %u\n", secret->s2kHashAlgo);    
+    Serial.printf("Hash algorithm: %u\n", secret->s2kHashAlgo);    
     
     // Read the salt if there is one
     switch (secret->s2kSpecifier) {
@@ -1055,7 +1055,7 @@ static uint8_t spgp_parse_secret_key(uint8_t *msg, uint32_t *idx,
       	break;
     }
   }
-  LOG_PRINT("Salt length: %u\n", secret->s2kSaltLength);
+  Serial.printf("Salt length: %u\n", secret->s2kSaltLength);
   
   // If it's not encrypted, we can just read the secret MPIs
   if (!secret->s2kEncryption) {
@@ -1066,7 +1066,7 @@ static uint8_t spgp_parse_secret_key(uint8_t *msg, uint32_t *idx,
   
   	// There's an initial vector (IV) here:
   	spgp_read_iv(msg, idx, length, secret);
-    LOG_PRINT("IV length: %u\n", secret->ivLength);
+    Serial.printf("IV length: %u\n", secret->ivLength);
   
   	// Figure out how much is left, and make sure it's available
   	uint32_t packetOffset = *idx - startIdx;
@@ -1080,7 +1080,7 @@ static uint8_t spgp_parse_secret_key(uint8_t *msg, uint32_t *idx,
     secret->encryptedDataLength = remaining;
     
     *idx += remaining-1;
-    LOG_PRINT("Stored %u encrypted bytes.\n", remaining);
+    Serial.printf("Stored %u encrypted bytes.\n", remaining);
     // This is the end of the data, so we do NOT do a final idx increment
   }
   
@@ -1230,7 +1230,7 @@ static uint8_t spgp_zlib_decompress_buffer(uint8_t *inbuf, uint32_t inlen,
   for (i = s.total_out; i < maxsize; i++)
   	(*outbuf)[i] = 0x55;
   
-  LOG_PRINT("Inflating up to %u bytes\n", maxsize);
+  Serial.printf("Inflating up to %u bytes\n", maxsize);
   while ((err = inflate(&s, Z_NO_FLUSH)) != Z_STREAM_END) {
   	if (err != Z_OK) RAISE(ZLIB_ERROR);
     if (s.avail_in == 0) break; // Done
@@ -1246,9 +1246,9 @@ static uint8_t spgp_zlib_decompress_buffer(uint8_t *inbuf, uint32_t inlen,
     for (i = s.total_out; i < maxsize; i++)
     	(*outbuf)[i] = 0x55;
 		s.avail_out = maxsize - s.total_out;
-    LOG_PRINT("Grew to up to %u bytes\n", maxsize);
+    Serial.printf("Grew to up to %u bytes\n", maxsize);
   }
-  LOG_PRINT("Total inflated bytes: %lu\n", s.total_out);
+  Serial.printf("Total inflated bytes: %lu\n", s.total_out);
   *outlen = s.total_out;
   
   if (inflateEnd(&s) != Z_OK) RAISE(ZLIB_ERROR);
@@ -1274,17 +1274,17 @@ static uint8_t spgp_parse_compressed_packet(uint8_t *msg,
   SAFE_IDX_INCREMENT(*idx, length);
   switch (algo) {
     case 1:
-    	LOG_PRINT("ZIP compressed packet\n");
+    	Serial.printf("ZIP compressed packet\n");
       spgp_zlib_decompress_buffer(msg+*idx, pkt->header->contentLength,
                                   &decomp, &decomp_len, algo);
       break;
     case 2:
-    	LOG_PRINT("ZLIB compressed packet\n");
+    	Serial.printf("ZLIB compressed packet\n");
       spgp_zlib_decompress_buffer(msg+*idx, pkt->header->contentLength,
                                   &decomp, &decomp_len, algo);
       break;
     default:
-    	LOG_PRINT("Unsupported packet compression: %u\n", algo);
+    	Serial.printf("Unsupported packet compression: %u\n", algo);
       RAISE(FORMAT_UNSUPPORTED);
   }
   
@@ -1336,7 +1336,7 @@ static uint8_t spgp_parse_encrypted_packet(uint8_t *msg,
   
   session_pkt = spgp_find_session_packet(pkt);
   if (NULL == session_pkt) {
-  	LOG_PRINT("No session key found!\n");
+  	Serial.printf("No session key found!\n");
   	RAISE(DECRYPT_FAILED);
   }
   session = session_pkt->c.session;
@@ -1381,7 +1381,7 @@ static uint8_t spgp_parse_encrypted_packet(uint8_t *msg,
     encbytes = spgp_new_header_length(msg+*idx, 
                						            &(headerlen),
                           						&(is_partial));
-    LOG_PRINT("%u more bytes\n", encbytes);
+    Serial.printf("%u more bytes\n", encbytes);
 
   	// Fuck everything and everyone.  Partial lengths are the enemy of
     // gentlemen.  We shall kill it brutishly, by moving everything down.
@@ -1403,10 +1403,10 @@ static uint8_t spgp_parse_encrypted_packet(uint8_t *msg,
 
 	// Validate decryption with PGP's MDC doo-hickey.  
   if (memcmp(msg+startidx+blksize-2, msg+startidx+blksize, 2) != 0) {
-  	LOG_PRINT("Decrypted data block fails validation!\n");
+  	Serial.printf("Decrypted data block fails validation!\n");
     RAISE(DECRYPT_FAILED);
   }
-  LOG_PRINT("Decrypt succeeded.\n");
+  Serial.printf("Decrypt succeeded.\n");
 
   // At this point, msg has been decrypted in place and now contains
   // a bunch of packets.  Since it was decoded in place, and since we're
@@ -1433,7 +1433,7 @@ static uint8_t spgp_parse_literal_packet(uint8_t *msg,
   uint32_t startidx;
   uint8_t format;
   
-  LOG_PRINT("Parsing literal packet\n");
+  Serial.printf("Parsing literal packet\n");
 
 	if (NULL == msg || NULL == idx || NULL == pkt || length == 0)                              
   	RAISE(INVALID_ARGS);
@@ -1473,7 +1473,7 @@ static uint8_t spgp_parse_literal_packet(uint8_t *msg,
   memcpy(literal->data, msg+*idx, literal->dataLen);
   *idx += literal->dataLen - 1;
   
-  LOG_PRINT("Stored %u bytes\n", literal->dataLen);
+  Serial.printf("Stored %u bytes\n", literal->dataLen);
   
 	return 0;
 }
@@ -1489,7 +1489,7 @@ static uint8_t spgp_parse_signature_packet(uint8_t *msg,
   unsigned char *hash;
   uint32_t totalLen;
 
-	LOG_PRINT("Parsing signature packet\n");
+	Serial.printf("Parsing signature packet\n");
   
   if (msg == NULL || idx == NULL || pkt == NULL || 0 == length)
   	RAISE(INVALID_ARGS);
@@ -1515,7 +1515,7 @@ static uint8_t spgp_parse_signature_packet(uint8_t *msg,
 	sig->hashAlgo = msg[*idx];
   SAFE_IDX_INCREMENT(*idx, length);
 	
-  LOG_PRINT("Signature type 0x%X, algo 0x%X, hash 0x%X\n",
+  Serial.printf("Signature type 0x%X, algo 0x%X, hash 0x%X\n",
   	sig->type, sig->asymAlgo, sig->hashAlgo);
     
   sig->hashedSubLength = ((msg[*idx] & 0xFF) << 8) | msg[*idx + 1];
@@ -1617,7 +1617,7 @@ static uint8_t spgp_parse_session_packet(uint8_t *msg, uint32_t *idx,
   unsigned long frame_len;
   uint8_t *frame;
   
-  LOG_PRINT("Parsing session packet.\n");
+  Serial.printf("Parsing session packet.\n");
 
 	if (NULL == msg || NULL == idx || length == 0 || NULL == pkt)
   	RAISE(INVALID_ARGS);
@@ -1634,14 +1634,14 @@ static uint8_t spgp_parse_session_packet(uint8_t *msg, uint32_t *idx,
   
   session->version = msg[*idx];
   SAFE_IDX_INCREMENT(*idx, length);
-  LOG_PRINT("Version: %u\n", session->version);
+  Serial.printf("Version: %u\n", session->version);
 
 	memcpy(session->keyid, msg+*idx, 8);
   *idx += 7;
   SAFE_IDX_INCREMENT(*idx, length);
-  LOG_PRINT("Session for key ID: ");
-  for (i = 0; i < 8; i++) printf("%.2X",session->keyid[i]);
-  printf("\n");
+  Serial.printf("Session for key ID: ");
+  for (i = 0; i < 8; i++) Serial.printf("%.2X",session->keyid[i]);
+  Serial.printf("\n");
 
   session->algo = msg[*idx];
   SAFE_IDX_INCREMENT(*idx, length);
@@ -1661,7 +1661,7 @@ static uint8_t spgp_parse_session_packet(uint8_t *msg, uint32_t *idx,
   spgp_keychain_iter_start();
   while ((chain = spgp_keychain_iter_next()) != NULL) {
   	if ((key = spgp_secret_key_matching_id(chain, session->keyid)) != NULL) {
-    	LOG_PRINT("Found a matching key in keychain.\n");
+    	Serial.printf("Found a matching key in keychain.\n");
       break;
     }
   }
@@ -1749,14 +1749,14 @@ static uint8_t spgp_parse_session_packet(uint8_t *msg, uint32_t *idx,
   	sum = sum + (session->key[i] & 0xFF);
   }
   if (sum % 65536 != checksum) {
-  	LOG_PRINT("Session key checksum failed!\n");
+  	Serial.printf("Session key checksum failed!\n");
   	RAISE(DECRYPT_FAILED);
   }
   
   free(frame);
   frame = NULL;
   
-	LOG_PRINT("Decrypted session key.\n");
+	Serial.printf("Decrypted session key.\n");
   return 0;
 }
 
